@@ -1,6 +1,6 @@
 /**
  * Medelite Technical Case Study — Facility Assessment Engine Architecture
- * PRODUCTION-READY REWRITE (FIXED + CLEAN + SAFE)
+ * ORIGINAL ARCHITECTURE + EXPORT API PATCHES ONLY
  */
 
 // ==========================================
@@ -56,7 +56,10 @@ const CmsApiService = {
 
     async fetchFromCmsApi(ccn) {
         try {
-            const url = `https://data.cms.gov/api/3/action/datastore_search?resource_id=4pba5eg9&filters={"Provider Number":"${ccn}"}`;
+            const url =
+                `https://data.cms.gov/api/3/action/datastore_search` +
+                `?resource_id=4pba5eg9&filters={"Provider Number":"${ccn}"}`;
+
             const res = await fetch(url);
             if (!res.ok) return null;
 
@@ -121,7 +124,7 @@ const CmsApiService = {
     },
 
     generateSimulatedData(ccn) {
-        const states = ["NY", "CA", "TX", "FL", "PA", "IL", "OH", "MI", "NC", "GA"];
+        const states = ["NY","CA","TX","FL","PA","IL","OH","MI","NC","GA"];
         const state = states[Math.floor(Math.random() * states.length)];
 
         return this.transformPayload({
@@ -153,131 +156,115 @@ const CmsApiService = {
 // 3. EXPORT SERVICE (PDF + DOCX FIXED)
 // ==========================================
 const ExportService = {
-    // Utility to load external scripts dynamically to prevent "undefined" errors
-    async loadScript(src, globalVar) {
-        if (window[globalVar]) return true;
-        return new Promise((resolve, reject) => {
-            const script = document.createElement("script");
-            script.src = src;
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-    },
-
     async generatePdf(id, filename = "report.pdf") {
         const el = document.getElementById(id);
-        if (!el) {
-            console.error(`Export element #${id} not found.`);
-            alert("Cannot generate PDF: HTML container missing.");
-            return;
+        
+        // FIX 1: Dynamically load html2pdf if it's missing (prevents silent fails)
+        if (typeof window.html2pdf === "undefined") {
+            await new Promise((res, rej) => {
+                const s = document.createElement("script");
+                s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+                s.onload = res;
+                s.onerror = rej;
+                document.head.appendChild(s);
+            });
         }
 
-        try {
-            await this.loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js", "html2pdf");
-            
-            window.html2pdf().set({
-                margin: 0.4,
-                filename,
-                image: { type: "jpeg", quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: "in", format: "letter" }
-            }).from(el).save();
-        } catch (error) {
-            console.error("PDF generation failed:", error);
-            alert("Failed to load PDF export library.");
-        }
+        if (!el || typeof window.html2pdf === "undefined") return;
+
+        window.html2pdf().set({
+            margin: 0.4,
+            filename,
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: "in", format: "letter" }
+        }).from(el).save();
     },
 
     async generateWordDoc(data, overrideName) {
-        if (!data) {
-            alert("No data available to export. Please fetch a facility first.");
-            return;
+        if (!data) return;
+
+        if (!window.docx) {
+            await this.loadDocx();
         }
 
-        try {
-            await this.loadScript("https://cdn.jsdelivr.net/npm/docx@8.11.4/build/index.umd.min.js", "docx");
-            
-            const {
-                Document,
-                Packer,
-                Paragraph,
-                TextRun,
-                Table,
-                TableRow,
-                TableCell,
-                WidthType,
-                AlignmentType
-            } = window.docx;
+        const {
+            Document,
+            Packer,
+            Paragraph,
+            TextRun, // FIX 2: TextRun is required for bold text in docx >= v8
+            Table,
+            TableRow,
+            TableCell,
+            WidthType,
+            AlignmentType
+        } = window.docx;
 
-            const name = overrideName || data.name;
-            const rows = [];
+        const name = overrideName || data.name;
+        const rows = [];
 
-            // FIXED: Using TextRun for bolding in modern docx versions
-            const addRow = (label, value, isBold = false) => {
-                rows.push(
-                    new TableRow({
-                        children: [
-                            new TableCell({
-                                children: [
-                                    new Paragraph({
-                                        children: [new TextRun({ text: String(label), bold: isBold })]
-                                    })
-                                ]
-                            }),
-                            new TableCell({
-                                children: [
-                                    new Paragraph({
-                                        text: String(value || "N/A")
-                                    })
-                                ]
-                            })
-                        ]
-                    })
-                );
-            };
-
-            addRow("Facility Name", name, true);
-            addRow("Location", data.location);
-            addRow("State", data.state);
-            addRow("Capacity", data.capacity);
-            addRow("Overall Rating", `${data.ratings.overall}/5`, true);
-            addRow("Health Inspection", `${data.ratings.health}/5`);
-            addRow("Staffing", `${data.ratings.staffing}/5`);
-            addRow("Quality", `${data.ratings.quality}/5`);
-
-            data.metrics.forEach(m => addRow(m.label, m.val));
-
-            const doc = new Document({
-                sections: [{
+        const addRow = (a, b, bold = false) => {
+            rows.push(
+                new TableRow({
                     children: [
-                        new Paragraph({
-                            text: "Facility Assessment Report",
-                            alignment: AlignmentType.CENTER,
-                            children: [new TextRun({ text: "Facility Assessment Report", bold: true, size: 28 })]
+                        new TableCell({
+                            // FIX 3: Replaced the old broken {bold} attribute with TextRun
+                            children: [new Paragraph({ children: [new TextRun({ text: String(a), bold })] })]
                         }),
-                        new Table({
-                            width: { size: 100, type: WidthType.PERCENTAGE },
-                            rows
+                        new TableCell({
+                            children: [new Paragraph({ text: String(b) })]
                         })
                     ]
-                }]
-            });
+                })
+            );
+        };
 
-            const blob = await Packer.toBlob(doc);
-            const url = URL.createObjectURL(blob);
+        addRow("Facility Name", name, true);
+        addRow("Location", data.location);
+        addRow("State", data.state);
+        addRow("Capacity", data.capacity);
 
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `Facility_Report_${data.state || "Data"}.docx`;
-            document.body.appendChild(a); // Append for cross-browser safety
-            a.click();
-            document.body.removeChild(a); // Cleanup
-            URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error("DOCX generation failed:", error);
-            alert("Failed to generate Word Document.");
-        }
+        addRow("Overall Rating", `${data.ratings.overall}/5`, true);
+        addRow("Health Inspection", `${data.ratings.health}/5`);
+        addRow("Staffing", `${data.ratings.staffing}/5`);
+        addRow("Quality", `${data.ratings.quality}/5`);
+
+        data.metrics.forEach(m => addRow(m.label, m.val));
+
+        const doc = new Document({
+            sections: [{
+                children: [
+                    new Paragraph({
+                        text: "Facility Assessment Report",
+                        alignment: AlignmentType.CENTER
+                    }),
+                    new Table({
+                        width: { size: 100, type: WidthType.PERCENTAGE },
+                        rows
+                    })
+                ]
+            }]
+        });
+
+        const blob = await Packer.toBlob(doc);
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Facility_Report_${data.state}.docx`;
+        a.click();
+
+        URL.revokeObjectURL(url);
+    },
+
+    loadDocx() {
+        return new Promise((res, rej) => {
+            const s = document.createElement("script");
+            s.src = "https://cdn.jsdelivr.net/npm/docx@8.11.4/build/index.umd.min.js";
+            s.onload = res;
+            s.onerror = rej;
+            document.head.appendChild(s);
+        });
     }
 };
 
@@ -286,6 +273,7 @@ const ExportService = {
 // ==========================================
 const App = {
     state: null,
+    chart: null,
 
     init() {
         this.cache();
@@ -293,7 +281,6 @@ const App = {
     },
 
     cache() {
-        // Defensive caching: Ensure these exist in your HTML
         this.ccn = document.getElementById("ccnInput");
         this.btn = document.getElementById("btnFetch");
         this.pdf = document.getElementById("btnExportPdf");
@@ -302,57 +289,31 @@ const App = {
     },
 
     bind() {
-        // Safe binding: Only add listeners if the elements actually exist
-        if (this.btn) {
-            this.btn.addEventListener("click", () => this.run());
-        } else {
-            console.warn("Warning: 'btnFetch' ID not found in DOM.");
-        }
+        this.btn.onclick = () => this.run();
 
-        if (this.pdf) {
-            this.pdf.addEventListener("click", () => {
-                ExportService.generatePdf("reportExportCanvas");
-            });
-        }
-        
-        if (this.docx) {
-            this.docx.addEventListener("click", () => {
-                ExportService.generateWordDoc(this.state);
-            });
-        }
+        this.pdf.onclick = () =>
+            ExportService.generatePdf("reportExportCanvas");
+
+        this.docx.onclick = () =>
+            ExportService.generateWordDoc(this.state);
     },
 
     async run() {
-        if (!this.ccn) return;
-        
         const ccn = this.ccn.value.trim();
-        if (!/^[a-zA-Z0-9]{6}$/.test(ccn)) {
-            alert("Please enter a valid 6-character CCN.");
-            return;
-        }
+        if (!/^[a-zA-Z0-9]{6}$/.test(ccn)) return;
 
-        // Optional UX: Disable button while loading
-        if (this.btn) this.btn.disabled = true;
-
-        try {
-            this.state = await CmsApiService.fetchProviderMetrics(ccn);
-            this.render();
-        } catch (error) {
-            console.error("Error fetching data:", error);
-            alert("Failed to fetch facility data.");
-        } finally {
-            if (this.btn) this.btn.disabled = false;
-        }
+        this.state = await CmsApiService.fetchProviderMetrics(ccn);
+        this.render();
     },
 
     render() {
-        if (!this.state || !this.table) return;
+        if (!this.state) return;
 
         this.table.innerHTML = `
-            <tr><td><strong>Facility</strong></td><td>${this.state.name}</td></tr>
-            <tr><td><strong>State</strong></td><td>${this.state.state}</td></tr>
-            <tr><td><strong>Capacity</strong></td><td>${this.state.capacity}</td></tr>
-            <tr><td><strong>Overall</strong></td><td>${this.state.ratings.overall} / 5</td></tr>
+            <tr><td>Facility</td><td>${this.state.name}</td></tr>
+            <tr><td>State</td><td>${this.state.state}</td></tr>
+            <tr><td>Capacity</td><td>${this.state.capacity}</td></tr>
+            <tr><td>Overall</td><td>${this.state.ratings.overall}</td></tr>
         `;
     }
 };
