@@ -209,102 +209,93 @@ const ExportService = {
                 await this.loadDocxLibrary();
             }
 
-            const {
-                Document,
-                Packer,
-                Paragraph,
-                Table,
-                TableRow,
-                TableCell,
-                WidthType,
-                BorderStyle,
-                AlignmentType
-            } = window.docx;
+            const { Document, Packer, Paragraph, Table, TableCell, WidthType, BorderStyle, AlignmentType } = window.docx;
 
             // Build table rows from data
             const tableRows = [
-                new TableRow({
-                    children: [
+                // Header row
+                new Table.TableRow({
+                    cells: [
                         new TableCell({ children: [new Paragraph({ text: "Report Field", bold: true })], shading: { fill: "4472C4", color: "FFFFFF" } }),
                         new TableCell({ children: [new Paragraph({ text: "Value", bold: true })], shading: { fill: "4472C4", color: "FFFFFF" } })
                     ]
                 }),
                 // Data rows
-                new TableRow({
-                    children: [
+                new Table.TableRow({
+                    cells: [
                         new TableCell({ children: [new Paragraph({ text: "Name of Facility", bold: true })] }),
                         new TableCell({ children: [new Paragraph({ text: finalName })] })
                     ]
                 }),
-                new TableRow({
-                    children: [
+                new Table.TableRow({
+                    cells: [
                         new TableCell({ children: [new Paragraph({ text: "Location" })] }),
                         new TableCell({ children: [new Paragraph({ text: dataModel.location })] })
                     ]
                 }),
-                new TableRow({
-                    children: [
+                new Table.TableRow({
+                    cells: [
                         new TableCell({ children: [new Paragraph({ text: "EMR" })] }),
                         new TableCell({ children: [new Paragraph({ text: document.getElementById("emrInput").value.trim() || "Not specified" })] })
                     ]
                 }),
-                new TableRow({
-                    children: [
+                new Table.TableRow({
+                    cells: [
                         new TableCell({ children: [new Paragraph({ text: "Census Capacity" })] }),
                         new TableCell({ children: [new Paragraph({ text: dataModel.capacity })] })
                     ]
                 }),
-                new TableRow({
-                    children: [
+                new Table.TableRow({
+                    cells: [
                         new TableCell({ children: [new Paragraph({ text: "Current Census" })] }),
                         new TableCell({ children: [new Paragraph({ text: document.getElementById("censusInput").value.trim() || "Not specified" })] })
                     ]
                 }),
-                new TableRow({
-                    children: [
+                new Table.TableRow({
+                    cells: [
                         new TableCell({ children: [new Paragraph({ text: "Type of Patient" })] }),
                         new TableCell({ children: [new Paragraph({ text: document.getElementById("patientTypeInput").value.trim() || "Not specified" })] })
                     ]
                 }),
-                new TableRow({
-                    children: [
+                new Table.TableRow({
+                    cells: [
                         new TableCell({ children: [new Paragraph({ text: "Previous Coverage from Medelite" })] }),
                         new TableCell({ children: [new Paragraph({ text: document.getElementById("prevCoverageInput").value || "Not specified" })] })
                     ]
                 }),
-                new TableRow({
-                    children: [
+                new Table.TableRow({
+                    cells: [
                         new TableCell({ children: [new Paragraph({ text: "Previous Provider Performance" })] }),
                         new TableCell({ children: [new Paragraph({ text: document.getElementById("prevPerformanceInput").value.trim() || "Not specified" })] })
                     ]
                 }),
-                new TableRow({
-                    children: [
+                new Table.TableRow({
+                    cells: [
                         new TableCell({ children: [new Paragraph({ text: "Medical Coverage" })] }),
                         new TableCell({ children: [new Paragraph({ text: document.getElementById("medCoverageInput").value.trim() || "Not specified" })] })
                     ]
                 }),
                 // Star Ratings
-                new TableRow({
-                    children: [
+                new Table.TableRow({
+                    cells: [
                         new TableCell({ children: [new Paragraph({ text: "Overall Star Rating", bold: true })] }),
                         new TableCell({ children: [new Paragraph({ text: `${dataModel.ratings.overall} / 5` })] })
                     ]
                 }),
-                new TableRow({
-                    children: [
+                new Table.TableRow({
+                    cells: [
                         new TableCell({ children: [new Paragraph({ text: "Health Inspection" })] }),
                         new TableCell({ children: [new Paragraph({ text: `${dataModel.ratings.health} / 5` })] })
                     ]
                 }),
-                new TableRow({
-                    children: [
+                new Table.TableRow({
+                    cells: [
                         new TableCell({ children: [new Paragraph({ text: "Staffing" })] }),
                         new TableCell({ children: [new Paragraph({ text: `${dataModel.ratings.staffing} / 5` })] })
                     ]
                 }),
-                new TableRow({
-                    children: [
+                new Table.TableRow({
+                    cells: [
                         new TableCell({ children: [new Paragraph({ text: "Quality of Resident Care" })] }),
                         new TableCell({ children: [new Paragraph({ text: `${dataModel.ratings.quality} / 5` })] })
                     ]
@@ -314,25 +305,14 @@ const ExportService = {
             // Add all 12 hospitalization metrics
             dataModel.metrics.forEach(metric => {
                 tableRows.push(
-                    new TableRow({
-                        children: [
-                            new TableCell({
-                                children: [
-                                    new Paragraph({
-                                        text: metric.label
-                                    })
-                                ]
-                            }),
-                            new TableCell({
-                                children: [
-                                    new Paragraph({
-                                        text: metric.val || "N/A"
-                                    })
-                                ]
-                            })
+                    new Table.TableRow({
+                        cells: [
+                            new TableCell({ children: [new Paragraph({ text: metric.label })] }),
+                            new TableCell({ children: [new Paragraph({ text: metric.val || "N/A", font: { name: "Courier New" } })] })
                         ]
                     })
                 );
+            });
 
             // Create document
             const doc = new Document({
@@ -413,7 +393,7 @@ const ExportService = {
             }
 
             const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/docx@8.11.4/build/index.umd.min.js';
+            script.src = 'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js';
             script.async = true;
             script.onload = resolve;
             script.onerror = reject;
