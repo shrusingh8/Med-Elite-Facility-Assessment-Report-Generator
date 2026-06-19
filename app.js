@@ -209,7 +209,17 @@ const ExportService = {
                 await this.loadDocxLibrary();
             }
 
-            const { Document, Packer, Paragraph, Table, TableCell, WidthType, BorderStyle, AlignmentType } = window.docx;
+            const {
+                Document,
+                Packer,
+                Paragraph,
+                Table,
+                TableRow,
+                TableCell,
+                WidthType,
+                BorderStyle,
+                AlignmentType
+            } = window.docx;
 
             // Build table rows from data
             const tableRows = [
