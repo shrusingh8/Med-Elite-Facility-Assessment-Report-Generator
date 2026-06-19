@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INFINITE — Facility Assessment Report Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Docx library for proper .docx generation -->
+    <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased selection:bg-blue-600 selection:text-white">
+
+    <div class="min-h-screen flex flex-col lg:flex-row">
+        
+        <aside class="w-full lg:w-[420px] bg-slate-800 border-b lg:border-b-0 lg:border-r border-slate-700 flex flex-col shrink-0 overflow-y-auto max-h-screen custom-scrollbar">
+            <div class="p-6 border-b border-slate-700 bg-slate-850">
+                <div class="flex items-center space-x-2">
+                    <span class="h-3 w-3 rounded-full bg-blue-500 animate-pulse"></span>
+                    <h1 class="text-xs font-black tracking-widest text-blue-400 uppercase">Medelite Operations</h1>
+                </div>
+                <h2 class="text-xl font-bold text-white mt-1">Report Dashboard</h2>
+                <p class="text-xs text-slate-400 mt-1">Generate client-ready assessment snapshots instantly.</p>
+            </div>
+
+            <form id="controlForm" class="p-6 space-y-5 flex-1" onsubmit="event.preventDefault();">
+                
+                <div class="space-y-1.5">
+                    <label for="ccnInput" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">CMS Certification Number (CCN) *</label>
+                    <div class="flex space-x-2">
+                        <div class="relative flex-1">
+                            <input type="text" id="ccnInput" maxlength="6" placeholder="e.g., 686123" 
+                                   class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500 transition-all font-mono">
+                        </div>
+                        <button type="button" id="btnFetch" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 rounded-lg shadow-md transition-all active:scale-[0.98] flex items-center justify-center">
+                            Fetch
+                        </button>
+                    </div>
+                    <span id="ccnError" class="text-xs text-red-400 hidden font-medium"></span>
+                </div>
+
+                <div class="border-t border-slate-700/60 my-4"></div>
+
+                <div class="space-y-1.5">
+                    <label for="nameOverride" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">Facility Name Override</label>
+                    <input type="text" id="nameOverride" placeholder="Leave blank to use public name" 
+                           class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500 transition-all">
+                    <p class="text-[11px] text-slate-400">Overrides output without changing corporate platform headers.</p>
+                </div>
+
+                <h3 class="text-xs font-bold text-blue-400 tracking-wider uppercase pt-2">Internal Operational Data</h3>
+
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="space-y-1.5">
+                        <label for="emrInput" class="block text-xs font-medium text-slate-300">Electronic Medical Record (EMR)</label>
+                        <input type="text" id="emrInput" placeholder="e.g., PCC, MatrixCare" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label for="censusInput" class="block text-xs font-medium text-slate-300">Current Census Count</label>
+                        <input type="number" id="censusInput" placeholder="e.g., 112" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label for="patientTypeInput" class="block text-xs font-medium text-slate-300">Type of Patient Care</label>
+                        <input type="text" id="patientTypeInput" placeholder="e.g., Long-term & Short-term" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label for="prevCoverageInput" class="block text-xs font-medium text-slate-300">Previous Coverage from Medelite</label>
+                        <select id="prevCoverageInput" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select Option...</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label for="prevPerformanceInput" class="block text-xs font-medium text-slate-300">Previous Provider Performance</label>
+                        <input type="text" id="prevPerformanceInput" placeholder="e.g., About 30 patients/day" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label for="medCoverageInput" class="block text-xs font-medium text-slate-300">Medical Coverage Specialties</label>
+                        <input type="text" id="medCoverageInput" placeholder="e.g., Optometry, PCP, Podiatry" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500">
+                    </div>
+                </div>
+            </form>
+
+            <div class="p-6 border-t border-slate-700 bg-slate-850 space-y-3">
+                <button type="button" id="btnExportPdf" disabled 
+                        class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold py-2.5 px-4 rounded-xl shadow-lg transition-all active:scale-[0.99] flex items-center justify-center space-x-2 text-sm">
+                    <span>📥 Download PDF Report</span>
+                </button>
+                <button type="button" id="btnExportDocx" disabled 
+                        class="w-full bg-transparent border border-slate-600 hover:border-slate-500 disabled:border-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-slate-300 font-medium py-2 px-4 rounded-xl transition-all flex items-center justify-center space-x-2 text-xs">
+                    <span>📄 Export Word Doc (.docx)</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 bg-slate-950 p-6 lg:p-12 flex flex-col items-center justify-start overflow-y-auto">
+            
+            <div id="statusNotification" class="w-full max-w-[816px] mb-4 text-center text-sm font-medium py-2 px-4 rounded-lg hidden"></div>
+
+            <div id="reportExportCanvas" class="w-full max-w-[816px] bg-white text-slate-900 p-10 shadow-2xl rounded-sm min-h-[1056px] flex flex-col justify-between hidden transition-all duration-300">
+                
+                <div class="space-y-6">
+                    <div class="flex justify-between items-start border-b-4 border-blue-700 pb-4">
+                        <div>
+                            <div class="text-2xl font-black text-slate-900 tracking-tight">
+                                INFINITE — Managed by MEDELITE
+                            </div>
+                            <h2 class="text-base font-extrabold text-slate-700 tracking-tight mt-1">
+                                FACILITY ASSESSMENT SNAPSHOT
+                            </h2>
+                        </div>
+                        <div class="text-right">
+                            <div class="mt-1">
+                                <span id="previewStateBadge" class="bg-blue-100 text-blue-800 text-xs font-black px-2.5 py-1 rounded border border-blue-200 uppercase tracking-widest">FL</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center text-xs bg-slate-50 border border-slate-200 rounded-lg p-3">
+                        <span class="text-slate-500 font-medium">Source Documentation Verification Engine</span>
+                        <a id="previewMedicareLink" href="#" target="_blank" class="text-blue-700 hover:text-blue-900 underline font-semibold flex items-center">
+                            View Official Medicare Profile →
+                        </a>
+                    </div>
+
+                    <div class="border border-slate-300 rounded-md overflow-hidden">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 border-b border-slate-300 text-slate-700 uppercase font-bold tracking-wider">
+                                    <th class="p-3 w-1/2 border-r border-slate-300">Report Dimension Field</th>
+                                    <th class="p-3">Evaluated Dataset Metrics</th>
+                                </tr>
+                            </thead>
+                            <tbody id="previewTableBody" class="divide-y divide-slate-200">
+                                </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 border border-slate-200 rounded-xl p-4 bg-slate-50">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 text-center">CMS Performance Profile Analytics</h4>
+                        <div class="relative h-44 w-full">
+                            <canvas id="chartUiInstance"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-200 pt-3 text-[10px] text-slate-400 font-medium flex justify-between uppercase tracking-wider">
+                    <span>Confidential Internal Advisory Assessment Document</span>
+                    <span>System Run Date: <span id="currentTimestamp"></span></span>
+                </div>
+            </div>
+
+            <div id="previewPlaceholder" class="w-full max-w-[816px] border-2 border-dashed border-slate-700 rounded-2xl p-16 text-center text-slate-500 my-auto">
+                <svg class="mx-auto h-12 w-12 text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="text-base font-semibold text-slate-400">No Assessment Data Rendered</h3>
+                <p class="text-xs text-slate-500 max-w-xs mx-auto mt-1">Provide a valid 6-digit CMS Certification Number (CCN) to run calculations and construct reports.</p>
+                <button type="button" onclick="document.getElementById('ccnInput').value='686123'; document.getElementById('btnFetch').click();" class="mt-4 text-xs bg-slate-800 text-blue-400 font-bold px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-all border border-slate-700">
+                    Load Test Target Asset (686123)
+                </button>
+            </div>
+        </main>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

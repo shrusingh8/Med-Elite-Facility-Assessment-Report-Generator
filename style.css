@@ -1,0 +1,38 @@
+/* Custom App Engine Layout Rules */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #0f172a; /* slate-950 */
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #334155; /* slate-700 */
+    border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #475569; /* slate-600 */
+}
+
+/* Print/PDF Page Breaks Optimization */
+@media print {
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+    aside {
+        display: none !important;
+    }
+    #reportExportCanvas {
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+/* Explicit Table Row Background States for Polished Presentation */
+.row-label-primary { background-color: #f8fafc; font-weight: 700; }
+.row-cms-rating { background-color: #fdfdfd; }
+.row-metric-str { background-color: #f0fdfa; } /* Clear distinction for Short Stay */
+.row-metric-lt { background-color: #f0f9ff; }  /* Clear distinction for Long Stay */
