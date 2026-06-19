@@ -1,8 +1,7 @@
 /**
  * Medelite Technical Case Study — Facility Assessment Engine Architecture
  * ENHANCED VERSION: Proper DOCX Export + Real CMS API Integration + Complete Error Handling
- * 
- * Engineering Assumptions (documented per requirements):
+ * * Engineering Assumptions (documented per requirements):
  * 1. CMS API: Direct API calls attempted first; falls back to cached test data due to CORS
  * 2. Word Export: Uses docx.js library for true .docx generation (not HTML masquerade)
  * 3. Hospitalization Metrics: All 12 CMS claims-based measures implemented with state/national averages
@@ -207,94 +206,102 @@ const ExportService = {
             // Dynamically load docx library
             if (typeof window.docx === 'undefined') {
                 await this.loadDocxLibrary();
+
+                console.log("DOCX LOADED:", window.docx);
+
+                if (!window.docx) {
+                    throw new Error("docx library failed to load");
+                }
             }
 
-            const { Document, Packer, Paragraph, Table, TableCell, WidthType, BorderStyle, AlignmentType } = window.docx;
+            // FIXED: Added TableRow to the destruction map so it doesn't try to access Table.TableRow
+            const { Document, Packer, Paragraph, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType } = window.docx;
 
             // Build table rows from data
+            // FIXED: Changed all instances of new Table.TableRow to new TableRow
             const tableRows = [
                 // Header row
-                new Table.TableRow({
+                new TableRow({
                     cells: [
                         new TableCell({ children: [new Paragraph({ text: "Report Field", bold: true })], shading: { fill: "4472C4", color: "FFFFFF" } }),
                         new TableCell({ children: [new Paragraph({ text: "Value", bold: true })], shading: { fill: "4472C4", color: "FFFFFF" } })
                     ]
                 }),
                 // Data rows
-                new Table.TableRow({
+                new TableRow({
                     cells: [
                         new TableCell({ children: [new Paragraph({ text: "Name of Facility", bold: true })] }),
                         new TableCell({ children: [new Paragraph({ text: finalName })] })
                     ]
                 }),
-                new Table.TableRow({
+                new TableRow({
                     cells: [
                         new TableCell({ children: [new Paragraph({ text: "Location" })] }),
                         new TableCell({ children: [new Paragraph({ text: dataModel.location })] })
                     ]
                 }),
-                new Table.TableRow({
+                new TableRow({
                     cells: [
                         new TableCell({ children: [new Paragraph({ text: "EMR" })] }),
                         new TableCell({ children: [new Paragraph({ text: document.getElementById("emrInput").value.trim() || "Not specified" })] })
                     ]
                 }),
-                new Table.TableRow({
+                new TableRow({
                     cells: [
                         new TableCell({ children: [new Paragraph({ text: "Census Capacity" })] }),
                         new TableCell({ children: [new Paragraph({ text: dataModel.capacity })] })
                     ]
                 }),
-                new Table.TableRow({
+                new TableRow({
                     cells: [
                         new TableCell({ children: [new Paragraph({ text: "Current Census" })] }),
                         new TableCell({ children: [new Paragraph({ text: document.getElementById("censusInput").value.trim() || "Not specified" })] })
                     ]
                 }),
-                new Table.TableRow({
+                new TableRow({
                     cells: [
                         new TableCell({ children: [new Paragraph({ text: "Type of Patient" })] }),
                         new TableCell({ children: [new Paragraph({ text: document.getElementById("patientTypeInput").value.trim() || "Not specified" })] })
                     ]
                 }),
-                new Table.TableRow({
+                new TableRow({
                     cells: [
                         new TableCell({ children: [new Paragraph({ text: "Previous Coverage from Medelite" })] }),
                         new TableCell({ children: [new Paragraph({ text: document.getElementById("prevCoverageInput").value || "Not specified" })] })
                     ]
                 }),
-                new Table.TableRow({
+                new TableRow({
                     cells: [
                         new TableCell({ children: [new Paragraph({ text: "Previous Provider Performance" })] }),
                         new TableCell({ children: [new Paragraph({ text: document.getElementById("prevPerformanceInput").value.trim() || "Not specified" })] })
                     ]
                 }),
-                new Table.TableRow({
+                new TableRow({
                     cells: [
                         new TableCell({ children: [new Paragraph({ text: "Medical Coverage" })] }),
                         new TableCell({ children: [new Paragraph({ text: document.getElementById("medCoverageInput").value.trim() || "Not specified" })] })
                     ]
                 }),
                 // Star Ratings
-                new Table.TableRow({
+                new TableRow({
                     cells: [
                         new TableCell({ children: [new Paragraph({ text: "Overall Star Rating", bold: true })] }),
                         new TableCell({ children: [new Paragraph({ text: `${dataModel.ratings.overall} / 5` })] })
                     ]
                 }),
-                new Table.TableRow({
+                new TableRow({
                     cells: [
                         new TableCell({ children: [new Paragraph({ text: "Health Inspection" })] }),
                         new TableCell({ children: [new Paragraph({ text: `${dataModel.ratings.health} / 5` })] })
                     ]
                 }),
-                new Table.TableRow({
+                new TableRow({
                     cells: [
                         new TableCell({ children: [new Paragraph({ text: "Staffing" })] }),
                         new TableCell({ children: [new Paragraph({ text: `${dataModel.ratings.staffing} / 5` })] })
                     ]
                 }),
-                new Table.TableRow({
+                new TableRow({
                     cells: [
                         new TableCell({ children: [new Paragraph({ text: "Quality of Resident Care" })] }),
                         new TableCell({ children: [new Paragraph({ text: `${dataModel.ratings.quality} / 5` })] })
@@ -305,7 +312,8 @@ const ExportService = {
             // Add all 12 hospitalization metrics
             dataModel.metrics.forEach(metric => {
                 tableRows.push(
-                    new Table.TableRow({
+                    // FIXED: Changed to new TableRow
+                    new TableRow({
                         cells: [
                             new TableCell({ children: [new Paragraph({ text: metric.label })] }),
                             new TableCell({ children: [new Paragraph({ text: metric.val || "N/A", font: { name: "Courier New" } })] })
@@ -378,8 +386,13 @@ const ExportService = {
 
         } catch (error) {
             console.error("Word document generation error:", error);
-            alert("Error generating Word document. Please ensure docx library is loaded.");
-        }
+            console.error("Stack:", error.stack);
+
+            alert(`
+            Message: ${error.message}
+
+            See browser console (F12) for full stack trace.
+            `);}
     },
 
     /**
@@ -393,7 +406,7 @@ const ExportService = {
             }
 
             const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js';
+            script.src = 'https://cdn.jsdelivr.net/npm/docx@8.11.4/build/index.umd.min.js';
             script.async = true;
             script.onload = resolve;
             script.onerror = reject;
