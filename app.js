@@ -1,6 +1,6 @@
 /**
  * Medelite Technical Case Study — Facility Assessment Engine Architecture
- * ORIGINAL ARCHITECTURE + EXPORT API PATCHES ONLY
+ * BULLETPROOF FINAL VERSION
  */
 
 // ==========================================
@@ -158,8 +158,9 @@ const CmsApiService = {
 const ExportService = {
     async generatePdf(id, filename = "report.pdf") {
         const el = document.getElementById(id);
+        if (!el) return alert("Error: Could not find the HTML element for the PDF.");
         
-        // FIX 1: Dynamically load html2pdf if it's missing (prevents silent fails)
+        // FIX: Ensure html2pdf loads properly
         if (typeof window.html2pdf === "undefined") {
             await new Promise((res, rej) => {
                 const s = document.createElement("script");
@@ -169,8 +170,6 @@ const ExportService = {
                 document.head.appendChild(s);
             });
         }
-
-        if (!el || typeof window.html2pdf === "undefined") return;
 
         window.html2pdf().set({
             margin: 0.4,
@@ -182,23 +181,14 @@ const ExportService = {
     },
 
     async generateWordDoc(data, overrideName) {
-        if (!data) return;
+        if (!data) return alert("Fetch a facility first before exporting!");
 
         if (!window.docx) {
             await this.loadDocx();
         }
 
-        const {
-            Document,
-            Packer,
-            Paragraph,
-            TextRun, // FIX 2: TextRun is required for bold text in docx >= v8
-            Table,
-            TableRow,
-            TableCell,
-            WidthType,
-            AlignmentType
-        } = window.docx;
+        // FIX: Added TextRun to support bold formatting in docx version 8+
+        const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } = window.docx;
 
         const name = overrideName || data.name;
         const rows = [];
@@ -208,8 +198,8 @@ const ExportService = {
                 new TableRow({
                     children: [
                         new TableCell({
-                            // FIX 3: Replaced the old broken {bold} attribute with TextRun
-                            children: [new Paragraph({ children: [new TextRun({ text: String(a), bold })] })]
+                            // FIX: Bold goes inside TextRun, not directly on Paragraph
+                            children: [new Paragraph({ children: [new TextRun({ text: String(a), bold: bold })] })]
                         }),
                         new TableCell({
                             children: [new Paragraph({ text: String(b) })]
@@ -223,7 +213,6 @@ const ExportService = {
         addRow("Location", data.location);
         addRow("State", data.state);
         addRow("Capacity", data.capacity);
-
         addRow("Overall Rating", `${data.ratings.overall}/5`, true);
         addRow("Health Inspection", `${data.ratings.health}/5`);
         addRow("Staffing", `${data.ratings.staffing}/5`);
@@ -248,79 +237,14 @@ const ExportService = {
 
         const blob = await Packer.toBlob(doc);
         const url = URL.createObjectURL(blob);
-
         const a = document.createElement("a");
         a.href = url;
         a.download = `Facility_Report_${data.state}.docx`;
         a.click();
-
         URL.revokeObjectURL(url);
     },
 
     loadDocx() {
         return new Promise((res, rej) => {
             const s = document.createElement("script");
-            s.src = "https://cdn.jsdelivr.net/npm/docx@8.11.4/build/index.umd.min.js";
-            s.onload = res;
-            s.onerror = rej;
-            document.head.appendChild(s);
-        });
-    }
-};
-
-// ==========================================
-// 4. APP CONTROLLER
-// ==========================================
-const App = {
-    state: null,
-    chart: null,
-
-    init() {
-        this.cache();
-        this.bind();
-    },
-
-    cache() {
-        this.ccn = document.getElementById("ccnInput");
-        this.btn = document.getElementById("btnFetch");
-        this.pdf = document.getElementById("btnExportPdf");
-        this.docx = document.getElementById("btnExportDocx");
-        this.table = document.getElementById("previewTableBody");
-    },
-
-    bind() {
-        this.btn.onclick = () => this.run();
-
-        this.pdf.onclick = () =>
-            ExportService.generatePdf("reportExportCanvas");
-
-        this.docx.onclick = () =>
-            ExportService.generateWordDoc(this.state);
-    },
-
-    async run() {
-        const ccn = this.ccn.value.trim();
-        if (!/^[a-zA-Z0-9]{6}$/.test(ccn)) return;
-
-        this.state = await CmsApiService.fetchProviderMetrics(ccn);
-        this.render();
-    },
-
-    render() {
-        if (!this.state) return;
-
-        this.table.innerHTML = `
-            <tr><td>Facility</td><td>${this.state.name}</td></tr>
-            <tr><td>State</td><td>${this.state.state}</td></tr>
-            <tr><td>Capacity</td><td>${this.state.capacity}</td></tr>
-            <tr><td>Overall</td><td>${this.state.ratings.overall}</td></tr>
-        `;
-    }
-};
-
-// ==========================================
-// 5. INIT
-// ==========================================
-document.addEventListener("DOMContentLoaded", () => {
-    App.init();
-});
+            s.src = "https://cdn.jsdelivr.net/npm/docx@8.11.4/build/index.umd.min.
