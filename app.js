@@ -399,21 +399,21 @@ const ExportService = {
      * Dynamically load docx.js library from CDN
      */
     loadDocxLibrary() {
-        return new Promise((resolve, reject) => {
-            if (window.docx) {
-                resolve();
-                return;
-            }
+    return new Promise((resolve, reject) => {
+        if (window.docx) {
+            resolve();
+            return;
+        }
 
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/docx@8.11.4/build/index.umd.min.js';
-            script.async = true;
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-    }
-};
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/docx@8.11.4/build/index.umd.min.js';
+        script.async = true;
+        script.onload = resolve;
+        // Modified to throw a real JavaScript Error object
+        script.onerror = () => reject(new Error("Failed to download the 'docx' library from jsDelivr CDN. Please check your network connection or firewall."));
+        document.head.appendChild(script);
+    });
+}
 
 // ==========================================
 // 4. ENHANCED CLIENT UI STATE ENGINE & DOM CONTROLLER
