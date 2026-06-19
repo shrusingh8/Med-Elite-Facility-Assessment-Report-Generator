@@ -16,6 +16,14 @@ This application enables Medelite directors to quickly evaluate skilled nursing 
 - 📊 Generating professional PDF and Word document reports
 - 📈 Visualizing facility performance metrics with interactive charts
 
+## ⚡ Quick Start
+
+1. **Open the live app:** [Click here](https://shrusingh8.github.io/Med-Elite-Facility-Assessment-Report-Generator/)
+2. **Load test data:** Click "Load Test Target Asset (686123)" button
+3. **Fill in operational data:** EMR, Census, etc.
+4. **Download:** Click "📥 Download PDF Report" or "📄 Export Word Doc"
+
+**Test Facility:** Kendall Lakes Healthcare and Rehab Center (CCN: 686123)
 ### Core Features
 ✅ **Dynamic CCN Lookup** — Enter any valid CCN to fetch live facility data  
 ✅ **Facility Name Override** — Customize internal naming without affecting branding  
@@ -68,40 +76,55 @@ This project uses **zero-build architecture** — all dependencies are loaded fr
 
 ## 🚀 Deployment
 
-### Option A: Vercel (Recommended)
+### Live Application (Current)
+🎯 **[https://shrusingh8.github.io/Med-Elite-Facility-Assessment-Report-Generator/](https://shrusingh8.github.io/Med-Elite-Facility-Assessment-Report-Generator/)**
+
+Your application is live and ready to use. Simply open the link above and start entering CCNs.
+
+---
+
+### Local Development
 
 ```bash
-# 1. Install Vercel CLI
+# 1. Clone the repository
+git clone https://github.com/shrusingh8/Med-Elite-Facility-Assessment-Report-Generator.git
+cd Med-Elite-Facility-Assessment-Report-Generator
+
+# 2. Start local server
+npx http-server .
+# OR
+python -m http.server 8000
+```
+
+Then open `http://localhost:8000` in your browser.
+
+---
+
+### Deploy Your Own Copy
+
+If you'd like to host your own version:
+
+#### Option A: Vercel (Recommended for Production)
+
+```bash
 npm install -g vercel
-
-# 2. Deploy
 vercel
-
-# 3. Visit your live URL
 ```
 
-**Automatic deployments:** Connect your GitHub repo to Vercel for CI/CD on every push.
-
-### Option B: Netlify
+#### Option B: Netlify
 
 ```bash
-# 1. Install Netlify CLI
 npm install -g netlify-cli
-
-# 2. Deploy
-netlify deploy
-
-# 3. Visit your live URL
+netlify deploy --prod
 ```
 
-### Option C: GitHub Pages
+#### Option C: GitHub Pages (What We Used)
 
 ```bash
-# 1. Push to gh-pages branch
-git subtree push --prefix . origin gh-pages
-
-# 2. Enable GitHub Pages in repository settings
-# Your site will be live at: https://yourusername.github.io/medelite-assessment-tool
+# Already deployed at the GitHub Pages URL above
+# To deploy from your fork:
+git push origin main
+# Enable in your repo settings → Pages → Deploy from main branch
 ```
 
 ---
